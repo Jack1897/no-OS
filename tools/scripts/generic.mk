@@ -263,6 +263,9 @@ all: $(BINARY)
 	$(call print_green, $(notdir $(BINARY)) is ready)
 else
 all:
+ifneq ($(INIT_SUBMODULES),)
+	$(INIT_SUBMODULES) echo Modules initialized
+endif
 #Remove -j flag for running project target. (It doesn't work on xilinx on this target)
 	$(MAKE) project MAKEFLAGS=$(MAKEOVERRIDES)
 	$(MAKE) $(BINARY)

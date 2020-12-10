@@ -3,15 +3,22 @@
 #	IIO
 ifeq (y,$(strip $(TINYIIOD)))
 
+TINYIIOD_DIR = $(NO-OS)/libraries/iio/libtinyiiod
+
 include ../../tools/scripts/iio_srcs.mk
 
 CFLAGS += -DTINYIIOD_VERSION_MAJOR=0	 \
 	   -DTINYIIOD_VERSION_MINOR=1		 \
-	   -DTINYIIOD_VERSION_GIT=0x$(shell git -C $(NO-OS)/libraries/iio/libtinyiiod/ \
+	   -DTINYIIOD_VERSION_GIT=0x$(shell git -C $(TINYIIOD_DIR)/ \
 	   				rev-parse --short HEAD) \
 	   -DIIOD_BUFFER_SIZE=0x1000		 \
 	   -D_USE_STD_INT_TYPES
 CFLAGS += -DIIO_SUPPORT
+
+ifeq ($(wildcard $(TINYIIOD_DIR)/.git),)
+INIT_SUBMODULES += git submodule update --init $(TINYIIOD_DIR) && 
+endif
+
 endif
 
 #	MBEDTLS
@@ -25,7 +32,7 @@ EXTRA_LIBS					+= $(MBEDTLS_LIBS)
 EXTRA_LIBS_PATHS			+= $(MBEDTLS_LIB_DIR)
 EXTRA_INC_PATHS		+= $(MBEDTLS_DIR)/include
 ifeq ($(wildcard $(MBEDTLS_DIR)/.git),)
-INIT_SUBMODULES				+= git submodule update --init --remote -- $(MBEDTLS_DIR);
+INIT_SUBMODULES				+= git submodule update --init $(MBEDTLS_DIR) &&
 endif
 
 #Rules
@@ -78,7 +85,7 @@ $(MQTT_LIB):
 
 endif
 
-LIB_TARGETS			+= $(IIO_LIB) $(MBEDTLS_TARGETS) $(FATFS_LIB) $(MQTT_LIB)
+LIB_TARGETS			+= $(MBEDTLS_TARGETS) $(FATFS_LIB) $(MQTT_LIB)
 EXTRA_LIBS_NAMES	= $(subst lib,,$(basename $(notdir $(EXTRA_LIBS))))
 LIB_FLAGS			+= $(addprefix -l,$(EXTRA_LIBS_NAMES))
 LIB_PATHS			+= $(addprefix -L,$(EXTRA_LIBS_PATHS))
@@ -93,14 +100,7 @@ endif
 
 # Build project Release Configuration
 PHONY := libs
-ifneq ($(INIT_SUBMODULES),)
-libs:
-	$(INIT_SUBMODULES)
-	@$(MAKE) libs
-else
 libs: $(LIB_TARGETS)
-	
-endif
 
 PHONY += clean_libs
 clean_libs:
